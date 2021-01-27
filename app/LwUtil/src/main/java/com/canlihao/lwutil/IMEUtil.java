@@ -14,7 +14,7 @@ import android.view.inputmethod.InputMethodManager;
  *类描述：
  *
  ********/
-public class IMEUtil {
+public class IMEUtil { 
     /**
      * 关闭输入法
      */
