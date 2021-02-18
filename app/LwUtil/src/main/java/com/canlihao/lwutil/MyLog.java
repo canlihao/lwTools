@@ -18,7 +18,7 @@ import java.util.Date;
 
 public class MyLog {
 	public static void setInit(boolean isdebug,String tag){
-		IS_SECURITY_LOG = isdebug;
+		IS_DEBUG = isdebug;
 		MyTAG = tag;
 	}
 	private static String MyTAG = "LW";
