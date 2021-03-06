@@ -873,7 +873,7 @@ public class Tools {
      * 是否为空
      */
     public static boolean isEmpty(String value) {
-        if (value == null ||  "null".equals(value) || "\"\"".equals(value)) {
+        if (value == null|| value.length() == 0 ||  "null".equals(value) || "\"\"".equals(value)) {
             return true;
         } else
             return false;
@@ -2752,6 +2752,13 @@ public class Tools {
         } else {
             return true;
         }
+    }
+     public static boolean hasAllPermissionsGranted(int[] grantResults) {
+        for (int grantResult : grantResults) {
+            if (grantResult != PackageManager.PERMISSION_GRANTED)
+                return false;
+        }
+        return true;
     }
     public static boolean hasAllPermissions(Context c, String... p) {
         if (isAndroidM()) {
