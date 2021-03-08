@@ -1,13 +1,16 @@
 package com.canlihao.tool;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -17,10 +20,19 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.canlihao.lwutil.GalleryUtil;
 import com.canlihao.lwutil.MyLog;
 import com.canlihao.lwutil.ToastUtil;
 import com.canlihao.lwutil.Tools;
+import com.canlihao.lwutil.matisse.entity.CaptureStrategy;
+import com.canlihao.lwutil.media.MimeType;
 import com.google.gson.Gson;
+
+import java.io.File;
+import java.util.List;
+
+import top.zibin.luban.Luban;
+import top.zibin.luban.OnCompressListener;
 
 /**
  * @Author : Panda李
@@ -43,19 +55,39 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void init() {
-        if (Tools.hasAllPermissions(this, Manifest.permission.CAMERA)){
+        if (Tools.hasAllPermissions(this, Manifest.permission.CAMERA,Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ,Manifest.permission.READ_EXTERNAL_STORAGE
+                ,Manifest.permission.ACCESS_FINE_LOCATION
+                ,Manifest.permission.ACCESS_COARSE_LOCATION)){
             ToastUtil.showToast(this,"相机权限打开了");
+            GalleryUtil.from(MainActivity.this)
+                    .choose(MimeType.ofImage())
+                    .maxSelectable(1)
+                    .restrictOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
+                    .capture(true)
+                    .captureStrategy(new CaptureStrategy(true, getApplication().getPackageName() + ".fileprovider"))
+                    .theme(R.style.Theme_Tool)
+                    .forResult(147);
         }else{
             MyLog.ii("请求相机权限");
-            Tools.requestPermission(this,1024,Manifest.permission.CAMERA);
+            Tools.requestPermission(this,1024,Manifest.permission.CAMERA,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.ACCESS_FINE_LOCATION
+                    ,Manifest.permission.ACCESS_COARSE_LOCATION);
         }
     }
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         MyLog.ii("--"+requestCode+"--"+new Gson().toJson(permissions) +"--"+new Gson().toJson(grantResults) +"--"+grantResults[0]);
-        if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+        if(grantResults.length > 0){
             ToastUtil.showToast(this,"相机权限打开了");
+            GalleryUtil.from(MainActivity.this)
+                    .choose(MimeType.ofImage())
+                    .maxSelectable(1)
+                    .restrictOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
+                    .capture(true)
+                    .captureStrategy(new CaptureStrategy(true, getApplication().getPackageName() + ".fileprovider"))
+                    .theme(R.style.Theme_Tool)
+                    .forResult(147);
         }else{
             showWaringDialog();
         }
@@ -83,5 +115,47 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                 }).show();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK && data != null) {
+            List<String> mSelected = GalleryUtil.obtainPathResult(data);
+            if (mSelected.size() > 0) {
+                String path = mSelected.get(0);
+                MyLog.ii("路径="+path);
+                Luban.with(this).load(path)
+                        .ignoreBy(350)
+                        .setTargetDir(getCacheFilePath(this))
+                        .setCompressListener(new OnCompressListener() {
+                            @Override
+                            public void onStart() {
+
+                            }
+
+                            @Override
+                            public void onSuccess(File file) {
+//                                uploadImage(file, requestCode);
+                                MyLog.i("uploadImage", file.getAbsolutePath());
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                MyLog.ii("压缩图片失败" + e.toString());
+                            }
+                        }).launch();
+                Log.i("dataUri", path);
+            }
+        }
+    }
+    public static String getCacheFilePath(Context context) {
+        return context.getCacheDir().getAbsolutePath();
+        /*String path = context.getCacheDir() + File.separator + "tmpImg";
+        File file = new File(path);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+        return path;*/
     }
 }
